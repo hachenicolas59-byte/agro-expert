@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧农气专家系统 (Agro-Meteorological Expert System)</title>
+    <!-- 引入 Tailwind CSS 进行现代 UI 布局 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 marked.js 用于解析 Markdown 输出 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 引入 Phosphor Icons 作为图标 -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* 自定义 Markdown 渲染样式 */
+        .prose h1 { font-size: 1.5rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; color: #166534; }
+        .prose h2 { font-size: 1.25rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; color: #15803d; border-bottom: 2px solid #bbf7d0; padding-bottom: 0.25rem;}
+        .prose h3 { font-size: 1.125rem; font-weight: bold; margin-top: 0.75rem; margin-bottom: 0.5rem; color: #16a34a; }
+        .prose p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .prose li { margin-bottom: 0.25rem; }
+        .prose strong { color: #065f46; font-weight: 600; }
+        
+        /* 页面背景动画 */
+        body {
+            background-color: #f0fdf4;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        /* 加载动画 */
+        .loader {
+            border: 4px solid #dcfce7;
+            border-bottom-color: #16a34a;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 font-sans min-h-screen flex flex-col items-center py-10 px-4">
+
+    <!-- 主容器 -->
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-green-100">
+        
+        <!-- 头部 -->
+        <div class="bg-gradient-to-r from-green-600 to-emerald-500 p-6 text-white text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-20 pointer-events-none">
+                <i class="ph-fill ph-plant absolute top-[-20px] left-[-20px] text-9xl"></i>
+                <i class="ph-fill ph-cloud-sun absolute bottom-[-30px] right-[-20px] text-9xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold mb-2 relative z-10 flex items-center justify-center gap-3">
+                <i class="ph ph-leaf"></i>
+                智慧农气专家系统
+            </h1>
+            <p class="text-green-50 relative z-10 text-sm md:text-base">基于气象预测、植物生理与病理学的智能农事决策引擎</p>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="p-6 md:p-8 flex flex-col md:flex-row gap-8">
+            
+            <!-- 左侧表单 -->
+            <div class="w-full md:w-1/3 flex flex-col gap-5">
+                <div class="bg-green-50 p-5 rounded-xl border border-green-100">
+                    <h2 class="text-lg font-bold text-green-800 mb-4 flex items-center gap-2">
+                        <i class="ph ph-target"></i> 输入农情信息
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">地理位置</label>
+                            <div class="relative">
+                                <i class="ph ph-map-pin absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="locationInput" placeholder="例如：山东省济南市长清区" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">作物品种</label>
+                            <div class="relative">
+                                <i class="ph ph-plant absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="cropInput" placeholder="例如：冬小麦" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">当前生育期</label>
+                            <div class="relative">
+                                <i class="ph ph-chart-line-up absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="stageInput" placeholder="例如：拔节期 / 抽穗期" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">拟进行的农事操作</label>
+                            <div class="relative">
+                                <i class="ph ph-tractor absolute left-3 top-3 text-gray-400"></i>
+                                <textarea id="operationInput" rows="3" placeholder="例如：计划明后天进行春季追肥和除草剂喷施" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none"></textarea>
+                            </div>
+                        </div>
+
+                        <button id="generateBtn" onclick="startAnalysis()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2">
+                            <i class="ph ph-magic-wand"></i> 生成气象诊断报告
+                        </button>
+                    </div>
+                </div>
+
+                <!-- IMAGE FEATURE UI -->
+                <div class="bg-blue-50 p-5 rounded-xl border border-blue-100">
+                    <h2 class="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
+                        <i class="ph ph-camera"></i> ✨ 病害智能视觉识别
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">上传受损/病害叶片照片</label>
+                            <input type="file" id="imageInput" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                        </div>
+                        <button id="analyzeImgBtn" onclick="analyzeImage()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="ph ph-scan"></i> ✨ 启动 AI 视觉诊断
+                        </button>
+                    </div>
+                </div>
+
+                <!-- INFO BOX -->
+                <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <i class="ph ph-info mr-1"></i> 系统将自动联网检索该地点的最新气象预测，并结合多学科模型进行风险研判。
+                </div>
+            </div>
+
+            <!-- 右侧结果 -->
+            <div class="w-full md:w-2/3 flex flex-col">
+                <div id="initialState" class="h-full flex flex-col items-center justify-center text-gray-400 min-h-[300px]">
+                    <i class="ph ph-monitor-play text-6xl mb-4 opacity-50"></i>
+                    <p>填写左侧信息并点击生成，在此查看诊断报告。</p>
+                </div>
+
+                <div id="loadingState" class="hidden h-full flex flex-col items-center justify-center text-green-600 min-h-[300px]">
+                    <span class="loader w-12 h-12 mb-4"></span>
+                    <p class="font-medium animate-pulse" id="loadingText">正在检索气象数据并进行跨学科联合运算...</p>
+                </div>
+
+                <div id="errorState" class="hidden h-full flex flex-col items-center justify-center text-red-500 min-h-[300px] bg-red-50 p-6 rounded-xl border border-red-100">
+                    <i class="ph ph-warning-circle text-5xl mb-3"></i>
+                    <h3 class="font-bold text-lg mb-2">生成失败</h3>
+                    <p id="errorMsg" class="text-sm text-center text-red-400"></p>
+                </div>
+
+                <div id="resultState" class="hidden w-full bg-white relative">
+                    <div class="flex items-center justify-between mb-4 border-b pb-2">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="ph ph-file-text text-green-600"></i> 专家诊断报告
+                        </h2>
+                        <div class="flex gap-2">
+                            <button id="ttsBtn" onclick="playTTS()" class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1 transition-colors bg-blue-50 px-3 py-1 rounded-md">
+                                <i class="ph ph-speaker-high"></i> ✨ 语音播报
+                            </button>
+                            <button onclick="copyReport()" class="text-green-600 hover:text-green-800 text-sm flex items-center gap-1 transition-colors bg-green-50 px-3 py-1 rounded-md">
+                                <i class="ph ph-copy"></i> 复制报告
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="markdownContent" class="prose max-w-none text-gray-700 text-sm md:text-base">
+                        <!-- Markdown 内容将渲染在这里 -->
+                    </div>
+
+                    <!-- QA FEATURE UI -->
+                    <div id="qaSection" class="mt-8 border-t border-gray-200 pt-6 hidden">
+                        <h3 class="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">
+                            <i class="ph ph-chat-circle-dots"></i> ✨ 进一步咨询专家
+                        </h3>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="text" id="qaInput" placeholder="基于刚才的报告或当前情况，您还有什么疑问？" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                            <button onclick="askQuestion()" class="bg-green-600 text-white font-medium px-6 py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 whitespace-nowrap">
+                                <i class="ph ph-paper-plane-right"></i> 发送追问
+                            </button>
+                        </div>
+                        <div id="qaResult" class="mt-4 prose max-w-none text-sm md:text-base text-gray-700 bg-green-50/50 p-5 rounded-xl border border-green-100 hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 隐藏提示框 -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transition-all duration-300">
+        复制成功！
+    </div>
+
+    <script>
+        // API 密钥由执行环境在运行时提供
+        const apiKey = ""; 
+
+        // 具有指数退避重试的 fetch 函数
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            let retries = 0;
+            const delays = [1000, 2000, 4000, 8000, 16000]; // 指数退避延迟
+
+            while (retries < maxRetries) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errText}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    retries++;
+                    if (retries >= maxRetries) {
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delays[retries - 1]));
+                }
+            }
+        }
+
+        // 全局变量保存当前报告文本，用于语音播报和 QA 上下文
+        let currentReportText = "";
+
+        // PCM 转 WAV 辅助函数 (TTS 所需)
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const dataSize = pcmData.length;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            for (let i = 0; i < pcmData.length; i++) {
+                view.setUint8(44 + i, pcmData[i]);
+            }
+            return buffer;
+        }
+
+        // 语音播报功能 (TTS API)
+        async function playTTS() {
+            if (!currentReportText) {
+                showToast("没有可播报的内容！");
+                return;
+            }
+            const ttsBtn = document.getElementById('ttsBtn');
+            ttsBtn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i> 生成语音中...';
+            ttsBtn.disabled = true;
+
+            try {
+                // 提取摘要进行播报 (前500字)，避免生成音频过长
+                const textToRead = currentReportText.replace(/[#*]/g, '').substring(0, 500) + (currentReportText.length > 500 ? "......播报完毕，详细内容请阅读屏幕全文。" : "");
+                
+                const payload = {
+                    contents: [{ parts: [{ text: "为您播报农情诊断摘要：" + textToRead }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const inlineData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+                if (inlineData && inlineData.data) {
+                    const base64Data = inlineData.data;
+                    const binaryString = window.atob(base64Data);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    let sampleRate = 24000;
+                    if (inlineData.mimeType && inlineData.mimeType.includes("rate=")) {
+                        const match = inlineData.mimeType.match(/rate=(\d+)/);
+                        if (match) sampleRate = parseInt(match[1]);
+                    }
+
+                    const wavBuffer = pcmToWav(bytes, sampleRate);
+                    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(blob);
+                    
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                    showToast("正在播报报告摘要...");
+                }
+            } catch (error) {
+                console.error("TTS Error:", error);
+                showToast("语音生成失败，请稍后重试。");
+            } finally {
+                ttsBtn.innerHTML = '<i class="ph ph-speaker-high"></i> ✨ 语音播报';
+                ttsBtn.disabled = false;
+            }
+        }
+
+        // 文件转 Base64 辅助函数
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
+                    if ((encoded.length % 4) > 0) {
+                        encoded += '='.repeat(4 - (encoded.length % 4));
+                    }
+                    resolve(encoded);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // 病害图片智能识别 (Image Understanding API)
+        async function analyzeImage() {
+            const fileInput = document.getElementById('imageInput');
+            const location = document.getElementById('locationInput').value.trim() || '未知地区';
+            const crop = document.getElementById('cropInput').value.trim() || '当前作物';
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showToast("请先选择一张病害叶片或植株的照片！");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const base64Data = await fileToBase64(file);
+            
+            // UI 状态切换
+            document.getElementById('initialState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('resultState').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('loadingText').innerText = "✨ 正在启动 AI 视觉引擎分析病理特征...";
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const prompt = `你是一个资深农业专家。我上传了一张可能是【${crop}】的病害或受损部位图片。目前所在地区是【${location}】。
+                请结合图片视觉特征，完成以下任务：
+                1. 识别图片中的作物及具体的病害/虫害/缺素症状名称。
+                2. 分析病害严重程度。
+                3. 结合当地可能的气候给出针对性的化学或物理防治建议。
+                使用易于阅读的 Markdown 格式输出。`;
+
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            { inlineData: { mimeType: file.type || "image/jpeg", data: base64Data } }
+                        ]
+                    }]
+                };
+
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!responseText) throw new Error("视觉分析未能返回结果。");
+
+                // 保存到全局变量供 QA 和 TTS 使用
+                currentReportText = responseText;
+                document.getElementById('markdownContent').innerHTML = 
+                    `<div class="mb-6 text-blue-700 bg-blue-50 p-4 rounded-lg font-bold border border-blue-200 flex items-center gap-2"><i class="ph ph-scan text-2xl"></i> AI 视觉病理诊断结果</div>` + 
+                    marked.parse(responseText);
+                
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('resultState').classList.remove('hidden');
+                document.getElementById('qaSection').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Image Analysis Error:", error);
+                document.getElementById('errorMsg').innerText = "视觉分析错误: " + error.message;
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('errorState').classList.remove('hidden');
+            }
+        }
+
+        // 进一步咨询专家 (Text Generation API)
+        async function askQuestion() {
+            const qaInput = document.getElementById('qaInput');
+            const question = qaInput.value.trim();
+            if (!question) return;
+
+            const qaResult = document.getElementById('qaResult');
+            qaResult.classList.remove('hidden');
+            qaResult.innerHTML = '<div class="flex items-center text-green-600 gap-2"><i class="ph ph-spinner-gap animate-spin"></i> 专家正在为您解答...</div>';
+            
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey= "AIzaSyClLZCyhqctBscily6uyvQsPDJf81GMGNs"}`;
+                
+                const prompt = `以下是我们刚才的报告上下文：
+                ${currentReportText}
+                
+                用户针对此报告或当前情况提出了一个新问题："${question}"
+                请作为农业气象与病理学专家，用专业、通俗易懂且简明扼要的语气回答用户的问题。`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }]
+                };
+
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                qaResult.innerHTML = marked.parse(responseText || "抱歉，未能获取到回答。");
+                qaInput.value = ""; 
+
+            } catch (error) {
+                qaResult.innerHTML = `<span class='text-red-500 flex items-center gap-2'><i class="ph ph-warning-circle"></i> 回答失败：${error.message}</span>`;
+            }
+        }
+
+        async function startAnalysis() {
+            // 获取输入值，对于未填写的字段赋予默认值，不再强制要求全部填写
+            const location = document.getElementById('locationInput').value.trim() || '未指定地区';
+            const crop = document.getElementById('cropInput').value.trim() || '未指定作物';
+            const stage = document.getElementById('stageInput').value.trim() || '未指定生育期';
+            const operation = document.getElementById('operationInput').value.trim() || '未指定拟定操作';
+
+            // 切换 UI 状态
+            document.getElementById('initialState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('resultState').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').classList.add('opacity-75', 'cursor-not-allowed');
+
+            try {
+                // 1. 构建复杂的专家提示词（System Prompt & User Query）
+                const systemPrompt = `你是一个融合了顶级农业气象学、植物生理学、植物病理学、病原微生物学以及农学栽培专家的 AI 系统。你的任务是根据用户提供的地点、作物、当前生育期以及拟进行的操作，结合你获取到的该地点未来7天的天气预报数据，给出一份极具权威性、可操作性的报告。
+                
+结构必须包含以下部分（使用 Markdown 格式）：
+1. ☁️ 近期核心气象诊断 (简述检索到的该地点近期关键天气变化趋势，如温度波动、降水、风速等)
+2. 🌿 植物生理影响评估 (结合生育期，分析当前气象条件对作物光合作用、蒸腾作用、养分吸收或器官发育的具体生理影响)
+3. 🦠 病虫害发生风险预警 (结合温湿度气象条件，应用植物病理学和微生物学原理，预测哪些特定病害（如孢子萌发、菌丝生长条件）或虫害容易爆发)
+4. 🚜 拟定农事操作可行性分析及改进建议 (针对用户计划的农事操作，评估是否合适，并结合气象给出具体的防范措施或时间调整建议)
+请保持专业、严谨，并给出具有极高实践指导价值的建议。`;
+
+                const userQuery = `
+地点：${location}
+作物品种：${crop}
+当前生育期：${stage}
+拟进行的农事操作：${operation}
+
+请先使用搜索工具查询“${location} 未来一周天气预报”，然后基于真实的气象预测数据，根据上述专家要求生成完整的诊断报告。`;
+
+                // 2. 准备调用 Gemini API (带 Google Search grounding)
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{
+                        parts: [{ text: userQuery }]
+                    }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    tools: [{
+                        google_search: {} // 启用联网搜索以获取当地天气
+                    }]
+                };
+
+                // 3. 发送请求
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // 4. 解析结果
+                const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!responseText) {
+                    throw new Error("模型未返回有效文本，可能由于安全拦截或网络问题。");
+                }
+
+                // 保存到全局变量供 TTS 和 QA 模块使用
+                currentReportText = responseText;
+
+                // 5. 渲染 Markdown
+                document.getElementById('markdownContent').innerHTML = marked.parse(responseText);
+
+                // 切换到结果界面
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('resultState').classList.remove('hidden');
+                document.getElementById('qaSection').classList.remove('hidden'); // 显示问答区域
+
+            } catch (error) {
+                console.error("生成报错:", error);
+                document.getElementById('errorMsg').innerText = "发生错误: " + error.message;
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('errorState').classList.remove('hidden');
+            } finally {
+                // 恢复按钮状态
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+
+        // 复制报告功能
+        function copyReport() {
+            const textToCopy = document.getElementById('markdownContent').innerText;
+            // 由于 iframe 限制，使用传统复制方法
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("报告已复制到剪贴板！");
+            } catch (err) {
+                showToast("复制失败，请手动选取复制。");
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // 提示框逻辑
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+        
+        // 预设一些示例方便测试
+        window.onload = () => {
+            document.getElementById('locationInput').value = "山东省济南市";
+            document.getElementById('cropInput').value = "冬小麦";
+            document.getElementById('stageInput').value = "拔节期";
+            document.getElementById('operationInput').value = "计划喷施除草剂并进行浇水追肥";
+        };
+    </script>
+</body>
+</html>
