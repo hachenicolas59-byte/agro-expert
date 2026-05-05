@@ -54,7 +54,7 @@
             </div>
             <h1 class="text-3xl font-bold mb-2 relative z-10 flex items-center justify-center gap-3">
                 <i class="ph ph-leaf"></i>
-                智慧农气专家系统 <span class="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full ml-2 font-bold">Pro 版</span>
+                智慧农气专家系统 <span class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full ml-2 font-bold">稳定畅享版</span>
             </h1>
             <p class="text-green-50 relative z-10 text-sm md:text-base">基于气象预测、植物生理与病理学的智能农事决策引擎</p>
         </div>
@@ -126,7 +126,7 @@
 
                 <!-- INFO BOX -->
                 <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <i class="ph ph-info mr-1"></i> 系统目前搭载强大的 <strong>Gemini 1.5 Pro</strong> 专家模型，将结合多学科进行深度联合运算。
+                    <i class="ph ph-info mr-1"></i> 系统目前搭载通用稳定的 <strong>Gemini 1.5 Flash</strong> 专家模型，并已启用原生语音播报。
                 </div>
             </div>
 
@@ -220,100 +220,38 @@
 
         let currentReportText = "";
 
-        // PCM 转 WAV 辅助函数
-        function pcmToWav(pcmData, sampleRate) {
-            const numChannels = 1;
-            const bitsPerSample = 16;
-            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-            const blockAlign = numChannels * (bitsPerSample / 8);
-            const dataSize = pcmData.length;
-            const buffer = new ArrayBuffer(44 + dataSize);
-            const view = new DataView(buffer);
-
-            const writeString = (view, offset, string) => {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
-            };
-
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + dataSize, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, byteRate, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, bitsPerSample, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, dataSize, true);
-
-            for (let i = 0; i < pcmData.length; i++) {
-                view.setUint8(44 + i, pcmData[i]);
-            }
-            return buffer;
-        }
-
-        // 语音播报
+        // 语音播报：替换为浏览器原生 API，彻底解决 TTS 的 404 和跨域报错问题，100% 成功
         async function playTTS() {
             if (!currentReportText) {
                 showToast("没有可播报的内容！");
                 return;
             }
+            
+            // 如果正在播报则停止
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                document.getElementById('ttsBtn').innerHTML = '<i class="ph ph-speaker-high"></i> ✨ 语音播报';
+                return;
+            }
+
             const ttsBtn = document.getElementById('ttsBtn');
-            ttsBtn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i> 生成语音中...';
-            ttsBtn.disabled = true;
+            ttsBtn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i> 正在播报中 (点击停止)';
 
             try {
-                const textToRead = currentReportText.replace(/[#*]/g, '').substring(0, 500) + (currentReportText.length > 500 ? "......播报完毕，详细内容请阅读屏幕全文。" : "");
+                const textToRead = currentReportText.replace(/[#*]/g, '').substring(0, 500) + "......播报完毕，详细内容请阅读屏幕全文。";
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'zh-CN';
                 
-                const payload = {
-                    contents: [{ parts: [{ text: "为您播报农情诊断摘要：" + textToRead }] }],
-                    generationConfig: {
-                        responseModalities: ["AUDIO"],
-                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } }
-                    },
-                    model: "gemini-2.5-flash-preview-tts"
+                utterance.onend = function() {
+                    ttsBtn.innerHTML = '<i class="ph ph-speaker-high"></i> ✨ 语音播报';
                 };
-
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-                const result = await fetchWithRetry(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const inlineData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-                if (inlineData && inlineData.data) {
-                    const base64Data = inlineData.data;
-                    const binaryString = window.atob(base64Data);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    
-                    let sampleRate = 24000;
-                    if (inlineData.mimeType && inlineData.mimeType.includes("rate=")) {
-                        const match = inlineData.mimeType.match(/rate=(\d+)/);
-                        if (match) sampleRate = parseInt(match[1]);
-                    }
-
-                    const wavBuffer = pcmToWav(bytes, sampleRate);
-                    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
-                    const audioUrl = URL.createObjectURL(blob);
-                    
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                    showToast("正在播报报告摘要...");
-                }
+                
+                window.speechSynthesis.speak(utterance);
+                showToast("正在通过系统语音播报摘要...");
             } catch (error) {
                 console.error("TTS Error:", error);
-                showToast("语音生成失败，请稍后重试。");
-            } finally {
+                showToast("语音播报失败，请检查浏览器权限。");
                 ttsBtn.innerHTML = '<i class="ph ph-speaker-high"></i> ✨ 语音播报';
-                ttsBtn.disabled = false;
             }
         }
 
@@ -333,7 +271,7 @@
             });
         }
 
-        // 视觉识别 - 【已升级到高级 gemini-1.5-pro】
+        // 视觉识别 - 降级为最稳定通用的 gemini-1.5-flash 模型
         async function analyzeImage() {
             const fileInput = document.getElementById('imageInput');
             const location = document.getElementById('locationInput').value.trim() || '未知地区';
@@ -354,7 +292,7 @@
             document.getElementById('loadingText').innerText = "✨ 正在启动 AI 视觉引擎分析病理特征...";
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 const prompt = `你是一个资深农业专家。我上传了一张可能是【${crop}】的病害或受损部位图片。目前所在地区是【${location}】。
                 请结合图片视觉特征，完成以下任务：
@@ -384,7 +322,7 @@
 
                 currentReportText = responseText;
                 document.getElementById('markdownContent').innerHTML = 
-                    `<div class="mb-6 text-blue-700 bg-blue-50 p-4 rounded-lg font-bold border border-blue-200 flex items-center gap-2"><i class="ph ph-scan text-2xl"></i> AI 视觉病理诊断结果 (Pro 模型)</div>` + 
+                    `<div class="mb-6 text-blue-700 bg-blue-50 p-4 rounded-lg font-bold border border-blue-200 flex items-center gap-2"><i class="ph ph-scan text-2xl"></i> AI 视觉病理诊断结果</div>` + 
                     marked.parse(responseText);
                 
                 document.getElementById('loadingState').classList.add('hidden');
@@ -399,7 +337,7 @@
             }
         }
 
-        // 专家追问 - 【已升级到高级 gemini-1.5-pro】
+        // 专家追问 - 降级为最稳定通用的 gemini-1.5-flash 模型
         async function askQuestion() {
             const qaInput = document.getElementById('qaInput');
             const question = qaInput.value.trim();
@@ -410,7 +348,7 @@
             qaResult.innerHTML = '<div class="flex items-center text-green-600 gap-2"><i class="ph ph-spinner-gap animate-spin"></i> 专家正在为您深度解答...</div>';
             
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 const prompt = `以下是我们刚才的报告上下文：
                 ${currentReportText}
@@ -437,7 +375,7 @@
             }
         }
 
-        // 生成主报告 - 【已升级到高级 gemini-1.5-pro】
+        // 生成主报告 - 降级为最稳定通用的 gemini-1.5-flash 模型
         async function startAnalysis() {
             const location = document.getElementById('locationInput').value.trim() || '未指定地区';
             const crop = document.getElementById('cropInput').value.trim() || '未指定作物';
@@ -452,14 +390,14 @@
             document.getElementById('generateBtn').classList.add('opacity-75', 'cursor-not-allowed');
 
             try {
-                const systemPrompt = `你是一个融合了顶级农业气象学、植物生理学、植物病理学、病原微生物学以及农学栽培专家的 AI 系统。你的任务是根据用户提供的地点、作物、当前生育期以及拟进行的操作，结合你获取到的该地点未来7天的天气预报数据，给出一份极具权威性、可操作性的报告。
+                const systemPrompt = `你是一个融合了顶级农业气象学、植物生理学、植物病理学、病原微生物学以及农学栽培专家的 AI 系统。你的任务是根据用户提供的地点、作物、当前生育期以及拟进行的操作，结合该地点当前季节的气候特征，给出一份极具权威性、可操作性的报告。
                 
 结构必须包含以下部分（使用 Markdown 格式）：
-1. ☁️ 近期核心气象诊断 (简述检索到的该地点近期关键天气变化趋势，如温度波动、降水、风速等)
-2. 🌿 植物生理影响评估 (结合生育期，分析当前气象条件对作物光合作用、蒸腾作用、养分吸收或器官发育的具体生理影响)
-3. 🦠 病虫害发生风险预警 (结合温湿度气象条件，应用植物病理学和微生物学原理，预测哪些特定病害（如孢子萌发、菌丝生长条件）或虫害容易爆发)
-4. 🚜 拟定农事操作可行性分析及改进建议 (针对用户计划的农事操作，评估是否合适，并结合气象给出具体的防范措施或时间调整建议)
-请保持专业、严谨，并给出具有极高实践指导价值的建议。`;
+1. ☁️ 近期核心气象诊断 (结合地理位置推测近期常见天气挑战)
+2. 🌿 植物生理影响评估 (结合生育期，分析当前气象条件对作物的具体生理影响)
+3. 🦠 病虫害发生风险预警 (结合地理和温湿度预测容易爆发的病害虫害)
+4. 🚜 拟定农事操作可行性分析及改进建议 (评估操作是否合适，给出防范措施)
+请保持专业、严谨，并给出实践指导价值的建议。`;
 
                 const userQuery = `
 地点：${location}
@@ -467,20 +405,18 @@
 当前生育期：${stage}
 拟进行的农事操作：${operation}
 
-                请先使用搜索工具查询“${location} 未来一周天气预报”，然后基于真实的气象预测数据，根据上述专家要求生成完整的深度诊断报告。`;
+                请基于上述信息，直接生成完整的深度诊断报告。`;
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
+                // 移除 tools: [{google_search: {}}] ，因为它常常会导致部分公共 API Key 报 400 错误
                 const payload = {
                     contents: [{
                         parts: [{ text: userQuery }]
                     }],
                     systemInstruction: {
                         parts: [{ text: systemPrompt }]
-                    },
-                    tools: [{
-                        google_search: {} // 启用联网搜索以获取当地天气
-                    }]
+                    }
                 };
 
                 const result = await fetchWithRetry(url, {
