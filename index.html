@@ -192,8 +192,8 @@
     </div>
 
     <script>
-        // API 密钥由执行环境在运行时提供
-        const apiKey = ""; 
+        // 这是您专属的 API 密钥
+        const apiKey = "AIzaSyClLZCyhqctBscily6uyvQsPDJf81GMGNs"; 
 
         // 具有指数退避重试的 fetch 函数
         async function fetchWithRetry(url, options, maxRetries = 5) {
@@ -414,7 +414,7 @@
             qaResult.innerHTML = '<div class="flex items-center text-green-600 gap-2"><i class="ph ph-spinner-gap animate-spin"></i> 专家正在为您解答...</div>';
             
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey= "AIzaSyClLZCyhqctBscily6uyvQsPDJf81GMGNs"}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 
                 const prompt = `以下是我们刚才的报告上下文：
                 ${currentReportText}
