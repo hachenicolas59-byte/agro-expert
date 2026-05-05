@@ -54,7 +54,7 @@
             </div>
             <h1 class="text-3xl font-bold mb-2 relative z-10 flex items-center justify-center gap-3">
                 <i class="ph ph-leaf"></i>
-                智慧农气专家系统
+                智慧农气专家系统 <span class="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full ml-2 font-bold">Pro 版</span>
             </h1>
             <p class="text-green-50 relative z-10 text-sm md:text-base">基于气象预测、植物生理与病理学的智能农事决策引擎</p>
         </div>
@@ -103,7 +103,7 @@
                         </div>
 
                         <button id="generateBtn" onclick="startAnalysis()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2">
-                            <i class="ph ph-magic-wand"></i> 生成气象诊断报告
+                            <i class="ph ph-magic-wand"></i> 生成深度气象诊断报告
                         </button>
                     </div>
                 </div>
@@ -126,7 +126,7 @@
 
                 <!-- INFO BOX -->
                 <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <i class="ph ph-info mr-1"></i> 系统将自动联网检索该地点的最新气象预测，并结合多学科模型进行风险研判。
+                    <i class="ph ph-info mr-1"></i> 系统目前搭载强大的 <strong>Gemini 1.5 Pro</strong> 专家模型，将结合多学科进行深度联合运算。
                 </div>
             </div>
 
@@ -139,7 +139,7 @@
 
                 <div id="loadingState" class="hidden h-full flex flex-col items-center justify-center text-green-600 min-h-[300px]">
                     <span class="loader w-12 h-12 mb-4"></span>
-                    <p class="font-medium animate-pulse" id="loadingText">正在检索气象数据并进行跨学科联合运算...</p>
+                    <p class="font-medium animate-pulse" id="loadingText">正在调取超级模型进行多学科深度运算...</p>
                 </div>
 
                 <div id="errorState" class="hidden h-full flex flex-col items-center justify-center text-red-500 min-h-[300px] bg-red-50 p-6 rounded-xl border border-red-100">
@@ -192,13 +192,13 @@
     </div>
 
     <script>
-        // 这是您专属的 API 密钥
+        // 您的真实 API 密钥已经填入
         const apiKey = "AIzaSyClLZCyhqctBscily6uyvQsPDJf81GMGNs"; 
 
         // 具有指数退避重试的 fetch 函数
         async function fetchWithRetry(url, options, maxRetries = 5) {
             let retries = 0;
-            const delays = [1000, 2000, 4000, 8000, 16000]; // 指数退避延迟
+            const delays = [1000, 2000, 4000, 8000, 16000]; 
 
             while (retries < maxRetries) {
                 try {
@@ -218,10 +218,9 @@
             }
         }
 
-        // 全局变量保存当前报告文本，用于语音播报和 QA 上下文
         let currentReportText = "";
 
-        // PCM 转 WAV 辅助函数 (TTS 所需)
+        // PCM 转 WAV 辅助函数
         function pcmToWav(pcmData, sampleRate) {
             const numChannels = 1;
             const bitsPerSample = 16;
@@ -257,7 +256,7 @@
             return buffer;
         }
 
-        // 语音播报功能 (TTS API)
+        // 语音播报
         async function playTTS() {
             if (!currentReportText) {
                 showToast("没有可播报的内容！");
@@ -268,7 +267,6 @@
             ttsBtn.disabled = true;
 
             try {
-                // 提取摘要进行播报 (前500字)，避免生成音频过长
                 const textToRead = currentReportText.replace(/[#*]/g, '').substring(0, 500) + (currentReportText.length > 500 ? "......播报完毕，详细内容请阅读屏幕全文。" : "");
                 
                 const payload = {
@@ -319,7 +317,7 @@
             }
         }
 
-        // 文件转 Base64 辅助函数
+        // 文件转 Base64
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -335,7 +333,7 @@
             });
         }
 
-        // 病害图片智能识别 (Image Understanding API)
+        // 视觉识别 - 【已升级到高级 gemini-1.5-pro】
         async function analyzeImage() {
             const fileInput = document.getElementById('imageInput');
             const location = document.getElementById('locationInput').value.trim() || '未知地区';
@@ -349,7 +347,6 @@
             const file = fileInput.files[0];
             const base64Data = await fileToBase64(file);
             
-            // UI 状态切换
             document.getElementById('initialState').classList.add('hidden');
             document.getElementById('errorState').classList.add('hidden');
             document.getElementById('resultState').classList.add('hidden');
@@ -357,7 +354,6 @@
             document.getElementById('loadingText').innerText = "✨ 正在启动 AI 视觉引擎分析病理特征...";
 
             try {
-                // 修改此处：升级为更高级的 gemini-1.5-pro 模型
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
                 
                 const prompt = `你是一个资深农业专家。我上传了一张可能是【${crop}】的病害或受损部位图片。目前所在地区是【${location}】。
@@ -386,10 +382,9 @@
                 const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!responseText) throw new Error("视觉分析未能返回结果。");
 
-                // 保存到全局变量供 QA 和 TTS 使用
                 currentReportText = responseText;
                 document.getElementById('markdownContent').innerHTML = 
-                    `<div class="mb-6 text-blue-700 bg-blue-50 p-4 rounded-lg font-bold border border-blue-200 flex items-center gap-2"><i class="ph ph-scan text-2xl"></i> AI 视觉病理诊断结果</div>` + 
+                    `<div class="mb-6 text-blue-700 bg-blue-50 p-4 rounded-lg font-bold border border-blue-200 flex items-center gap-2"><i class="ph ph-scan text-2xl"></i> AI 视觉病理诊断结果 (Pro 模型)</div>` + 
                     marked.parse(responseText);
                 
                 document.getElementById('loadingState').classList.add('hidden');
@@ -404,7 +399,7 @@
             }
         }
 
-        // 进一步咨询专家 (Text Generation API)
+        // 专家追问 - 【已升级到高级 gemini-1.5-pro】
         async function askQuestion() {
             const qaInput = document.getElementById('qaInput');
             const question = qaInput.value.trim();
@@ -412,10 +407,9 @@
 
             const qaResult = document.getElementById('qaResult');
             qaResult.classList.remove('hidden');
-            qaResult.innerHTML = '<div class="flex items-center text-green-600 gap-2"><i class="ph ph-spinner-gap animate-spin"></i> 专家正在为您解答...</div>';
+            qaResult.innerHTML = '<div class="flex items-center text-green-600 gap-2"><i class="ph ph-spinner-gap animate-spin"></i> 专家正在为您深度解答...</div>';
             
             try {
-                // 修改此处：升级为更高级的 gemini-1.5-pro 模型
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
                 
                 const prompt = `以下是我们刚才的报告上下文：
@@ -443,14 +437,13 @@
             }
         }
 
+        // 生成主报告 - 【已升级到高级 gemini-1.5-pro】
         async function startAnalysis() {
-            // 获取输入值，对于未填写的字段赋予默认值，不再强制要求全部填写
             const location = document.getElementById('locationInput').value.trim() || '未指定地区';
             const crop = document.getElementById('cropInput').value.trim() || '未指定作物';
             const stage = document.getElementById('stageInput').value.trim() || '未指定生育期';
             const operation = document.getElementById('operationInput').value.trim() || '未指定拟定操作';
 
-            // 切换 UI 状态
             document.getElementById('initialState').classList.add('hidden');
             document.getElementById('errorState').classList.add('hidden');
             document.getElementById('resultState').classList.add('hidden');
@@ -459,7 +452,6 @@
             document.getElementById('generateBtn').classList.add('opacity-75', 'cursor-not-allowed');
 
             try {
-                // 1. 构建复杂的专家提示词（System Prompt & User Query）
                 const systemPrompt = `你是一个融合了顶级农业气象学、植物生理学、植物病理学、病原微生物学以及农学栽培专家的 AI 系统。你的任务是根据用户提供的地点、作物、当前生育期以及拟进行的操作，结合你获取到的该地点未来7天的天气预报数据，给出一份极具权威性、可操作性的报告。
                 
 结构必须包含以下部分（使用 Markdown 格式）：
@@ -475,9 +467,8 @@
 当前生育期：${stage}
 拟进行的农事操作：${operation}
 
-                请先使用搜索工具查询“${location} 未来一周天气预报”，然后基于真实的气象预测数据，根据上述专家要求生成完整的诊断报告。`;
+                请先使用搜索工具查询“${location} 未来一周天气预报”，然后基于真实的气象预测数据，根据上述专家要求生成完整的深度诊断报告。`;
 
-                // 修改此处：升级为更高级的 gemini-1.5-pro 模型
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
                 
                 const payload = {
@@ -492,30 +483,24 @@
                     }]
                 };
 
-                // 3. 发送请求
                 const result = await fetchWithRetry(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                // 4. 解析结果
                 const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 
                 if (!responseText) {
                     throw new Error("模型未返回有效文本，可能由于安全拦截或网络问题。");
                 }
 
-                // 保存到全局变量供 TTS 和 QA 模块使用
                 currentReportText = responseText;
-
-                // 5. 渲染 Markdown
                 document.getElementById('markdownContent').innerHTML = marked.parse(responseText);
 
-                // 切换到结果界面
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('resultState').classList.remove('hidden');
-                document.getElementById('qaSection').classList.remove('hidden'); // 显示问答区域
+                document.getElementById('qaSection').classList.remove('hidden'); 
 
             } catch (error) {
                 console.error("生成报错:", error);
@@ -523,16 +508,14 @@
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('errorState').classList.remove('hidden');
             } finally {
-                // 恢复按钮状态
                 document.getElementById('generateBtn').disabled = false;
                 document.getElementById('generateBtn').classList.remove('opacity-75', 'cursor-not-allowed');
             }
         }
 
-        // 复制报告功能
+        // 复制和提示功能
         function copyReport() {
             const textToCopy = document.getElementById('markdownContent').innerText;
-            // 由于 iframe 限制，使用传统复制方法
             const textarea = document.createElement('textarea');
             textarea.value = textToCopy;
             document.body.appendChild(textarea);
@@ -546,7 +529,6 @@
             document.body.removeChild(textarea);
         }
 
-        // 提示框逻辑
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
@@ -556,12 +538,11 @@
             }, 3000);
         }
         
-        // 预设一些示例方便测试
         window.onload = () => {
             document.getElementById('locationInput').value = "山东省济南市";
             document.getElementById('cropInput').value = "冬小麦";
             document.getElementById('stageInput').value = "拔节期";
-            document.getElementById('operationInput').value = "计划喷施除草剂并进行浇水追肥";
+            document.getElementById('operationInput').value = "";
         };
     </script>
 </body>
