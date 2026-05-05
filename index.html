@@ -357,7 +357,8 @@
             document.getElementById('loadingText').innerText = "✨ 正在启动 AI 视觉引擎分析病理特征...";
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                // 修改此处：升级为更高级的 gemini-1.5-pro 模型
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
                 
                 const prompt = `你是一个资深农业专家。我上传了一张可能是【${crop}】的病害或受损部位图片。目前所在地区是【${location}】。
                 请结合图片视觉特征，完成以下任务：
@@ -414,7 +415,8 @@
             qaResult.innerHTML = '<div class="flex items-center text-green-600 gap-2"><i class="ph ph-spinner-gap animate-spin"></i> 专家正在为您解答...</div>';
             
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                // 修改此处：升级为更高级的 gemini-1.5-pro 模型
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
                 
                 const prompt = `以下是我们刚才的报告上下文：
                 ${currentReportText}
@@ -473,10 +475,10 @@
 当前生育期：${stage}
 拟进行的农事操作：${operation}
 
-请先使用搜索工具查询“${location} 未来一周天气预报”，然后基于真实的气象预测数据，根据上述专家要求生成完整的诊断报告。`;
+                请先使用搜索工具查询“${location} 未来一周天气预报”，然后基于真实的气象预测数据，根据上述专家要求生成完整的诊断报告。`;
 
-                // 2. 准备调用 Gemini API (带 Google Search grounding)
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                // 修改此处：升级为更高级的 gemini-1.5-pro 模型
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
                 
                 const payload = {
                     contents: [{
